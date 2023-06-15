@@ -1,14 +1,14 @@
 package com.example.test.application;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.example.test.application.dto.BoardCreateRequest;
+import com.example.test.application.dto.BoardResponse;
 import com.example.test.domain.Board;
 import com.example.test.domain.BoardRepository;
 import com.example.test.util.DatabaseCleanup;
 import java.util.UUID;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
