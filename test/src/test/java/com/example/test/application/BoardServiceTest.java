@@ -1,6 +1,11 @@
 package com.example.test.application;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.example.test.application.dto.BoardCreateRequest;
+import com.example.test.domain.Board;
+import com.example.test.domain.BoardRepository;
 import com.example.test.util.DatabaseCleanup;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -17,6 +22,8 @@ class BoardServiceTest {
     private DatabaseCleanup databaseCleanup;
     @Autowired
     private BoardService boardService;
+    @Autowired
+    private BoardRepository boardRepository;
 
     @BeforeEach
     void setUp() {
@@ -37,6 +44,28 @@ class BoardServiceTest {
         long id = boardService.create(boardCreateRequest);
 
         // then
-        Assertions.assertThat(id).isEqualTo(1L);
+        assertThat(id).isEqualTo(1L);
+    }
+
+    @Test
+    void 게시물_ID로_조회() {
+        // given
+        String title = UUID.randomUUID().toString();
+        String content = UUID.randomUUID().toString();
+        Board board = new Board(
+                title,
+                content
+        );
+        Board saveBoard = boardRepository.save(board);
+
+        // when
+        BoardResponse boardResponse = boardService.findById(saveBoard.getId());
+
+        // then
+        assertAll(
+                () -> assertThat(boardResponse.getId()).isEqualTo(1L),
+                () -> assertThat(boardResponse.getTitle()).isEqualTo(title),
+                () -> assertThat(boardResponse.getContent()).isEqualTo(content)
+        );
     }
 }
