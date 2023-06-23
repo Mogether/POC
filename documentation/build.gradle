@@ -1,75 +1,66 @@
+buildscript {
+    ext {
+        restdocsApiSpecVersion = '0.16.2'
+    }
+}
+
 plugins {
+    id 'org.springframework.boot' version '2.7.2'
+    id 'io.spring.dependency-management' version '1.0.12.RELEASE'
+    id 'com.epages.restdocs-api-spec' version "${restdocsApiSpecVersion}"
+    id 'org.hidetake.swagger.generator' version '2.18.2'
     id 'java'
-    id 'org.springframework.boot' version '3.1.0'
-    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
-    // Asciidoctor plugin 적용
-    id "org.asciidoctor.jvm.convert" version "3.3.2"
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-
-java {
-    sourceCompatibility = '17'
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-    // asciidoctor 의존성
-    asciidoctorExtensions
-}
+sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'com.h2database:h2'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.rest-assured:rest-assured:5.3.0'
-    // asciidoctorExt 구성에 asciidoctor 종속성 추가
-    asciidoctorExtensions 'org.springframework.restdocs:spring-restdocs-asciidoctor'
-    // rest-assured 를 통한 restdocs 사용
-    testImplementation 'org.springframework.restdocs:spring-restdocs-restassured'
+openapi3 {
+    setServer('http://localhost:8080')
+    title = 'restdocs-swagger API Documentation'
+    description = 'Spring REST Docs with SwaggerUI.'
+    version = '0.0.1'
+    format = 'yaml'
 }
 
-bootJar {
-    // bootJar task 전에 asciidoctor 작업 먼저 실행되도록 설정
-    dependsOn asciidoctor
-    // 생성된 asciidoctor 문서들을 statics/docs로 이동
-    copy {
-        from "${asciidoctor.outputDir}"
-        into "src/main/resources/static/docs"
+swaggerSources {
+    sample {
+        setInputFile(file("${project.buildDir}/api-spec/openapi3.yaml"))
     }
 }
 
-ext {
-    // snippets output dir 정의
-    snippetesDir = file('build/generated-snippets')
-}
-
-test {
-    // test 실행시 snippetesDir 에 출력하도록 구성
-    outputs.dir snippetesDir
-}
-
-// asciidoctor task 설정
-asciidoctor {
-    // snippetesDir를 입력으로 설정
-    inputs.dir snippetesDir
-    // asscidoctor 의존성 확장
-    configurations 'asciidoctorExtensions'
-    // asciidoctor 실행시 test 먼저 실행될 수 있도록 설정
-    dependsOn test
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "com.epages:restdocs-api-spec-restassured:${restdocsApiSpecVersion}"
+    testImplementation 'io.rest-assured:rest-assured'
+    swaggerUI 'org.webjars:swagger-ui:4.11.1'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// GenerateSwaggerUI 태스크가, openapi3 task 를 의존하도록 설정
+tasks.withType(GenerateSwaggerUI) {
+    dependsOn 'openapi3'
+}
+
+// 생성된 SwaggerUI 를 jar 에 포함시키기 위해 build/resources 경로로 로 복사
+tasks.register('copySwaggerUI', Copy) {
+    dependsOn 'generateSwaggerUISample'
+
+    def generateSwaggerUISampleTask = tasks.named('generateSwaggerUISample', GenerateSwaggerUI).get()
+
+    from("${generateSwaggerUISampleTask.outputDir}")
+    into("${project.buildDir}/resources/main/static/docs")
+}
+
+bootJar {
+    dependsOn 'copySwaggerUI'
 }
